@@ -141,6 +141,11 @@ export type ClientOptions = {
     accessToken?: string;
     fetchImpl?: typeof fetch;
 };
+export type BackendConfig = {
+    app_id: string;
+    backend_url: string;
+    anon_key: string;
+};
 export type BrowserEnv = {
     NEXT_PUBLIC_APP_BACKEND_URL?: string;
     NEXT_PUBLIC_APP_ANON_KEY?: string;
@@ -219,7 +224,7 @@ export declare function createClient(baseURL: string, apiKey: string, opts?: Cli
             items: StorageObject[];
         }>;
         buckets(): Promise<{
-            items: string[];
+            buckets: string[];
         }>;
         downloadText(params: {
             bucket?: string;
@@ -337,7 +342,9 @@ export declare function createClient(baseURL: string, apiKey: string, opts?: Cli
         }>;
     };
 };
-export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: ClientOptions): {
+export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: ClientOptions & {
+    config?: BackendConfig;
+}): {
     setAccessToken(token: string): void;
     auth: {
         register(email: string, password: string, metadata?: Record<string, unknown>): Promise<AuthPayload>;
@@ -406,7 +413,7 @@ export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: Clien
             items: StorageObject[];
         }>;
         buckets(): Promise<{
-            items: string[];
+            buckets: string[];
         }>;
         downloadText(params: {
             bucket?: string;
@@ -524,7 +531,9 @@ export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: Clien
         }>;
     };
 };
-export declare function createServerClientFromEnv(env: ServerEnv, opts?: ClientOptions): {
+export declare function createServerClientFromEnv(env: ServerEnv, opts?: ClientOptions & {
+    config?: BackendConfig;
+}): {
     setAccessToken(token: string): void;
     auth: {
         register(email: string, password: string, metadata?: Record<string, unknown>): Promise<AuthPayload>;
@@ -593,7 +602,7 @@ export declare function createServerClientFromEnv(env: ServerEnv, opts?: ClientO
             items: StorageObject[];
         }>;
         buckets(): Promise<{
-            items: string[];
+            buckets: string[];
         }>;
         downloadText(params: {
             bucket?: string;

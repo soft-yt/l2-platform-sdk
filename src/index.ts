@@ -159,6 +159,12 @@ export type ClientOptions = {
   fetchImpl?: typeof fetch;
 };
 
+export type BackendConfig = {
+  app_id: string;
+  backend_url: string;
+  anon_key: string;
+};
+
 export type BrowserEnv = {
   NEXT_PUBLIC_APP_BACKEND_URL?: string;
   NEXT_PUBLIC_APP_ANON_KEY?: string;
@@ -456,7 +462,7 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
         return request<{ items: StorageObject[] }>(`/v1/storage/list${suffix}`, { method: "GET" });
       },
       buckets() {
-        return request<{ items: string[] }>("/v1/storage/buckets", { method: "GET" });
+        return request<{ buckets: string[] }>("/v1/storage/buckets", { method: "GET" });
       },
       downloadText(params: { bucket?: string; key: string }) {
         const qs = new URLSearchParams();
@@ -649,14 +655,16 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
   };
 }
 
-export function createBrowserClientFromEnv(env: BrowserEnv, opts: ClientOptions = {}) {
-  const baseURL = ensureNonEmpty("NEXT_PUBLIC_APP_BACKEND_URL", env.NEXT_PUBLIC_APP_BACKEND_URL ?? "");
-  const anonKey = ensureNonEmpty("NEXT_PUBLIC_APP_ANON_KEY", env.NEXT_PUBLIC_APP_ANON_KEY ?? "");
+export function createBrowserClientFromEnv(env: BrowserEnv, opts: ClientOptions & { config?: BackendConfig } = {}) {
+  const cfg = opts.config;
+  const baseURL = ensureNonEmpty("NEXT_PUBLIC_APP_BACKEND_URL", env.NEXT_PUBLIC_APP_BACKEND_URL ?? cfg?.backend_url ?? "");
+  const anonKey = ensureNonEmpty("NEXT_PUBLIC_APP_ANON_KEY", env.NEXT_PUBLIC_APP_ANON_KEY ?? cfg?.anon_key ?? "");
   return createClient(baseURL, anonKey, opts);
 }
 
-export function createServerClientFromEnv(env: ServerEnv, opts: ClientOptions = {}) {
-  const baseURL = ensureNonEmpty("APP_BACKEND_URL", env.APP_BACKEND_URL ?? "");
+export function createServerClientFromEnv(env: ServerEnv, opts: ClientOptions & { config?: BackendConfig } = {}) {
+  const cfg = opts.config;
+  const baseURL = ensureNonEmpty("APP_BACKEND_URL", env.APP_BACKEND_URL ?? cfg?.backend_url ?? "");
   const serviceKey = ensureNonEmpty("APP_SERVICE_KEY", env.APP_SERVICE_KEY ?? "");
   return createClient(baseURL, serviceKey, opts);
 }

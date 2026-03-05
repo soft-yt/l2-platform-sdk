@@ -457,12 +457,14 @@ export function createClient(baseURL, apiKey, opts = {}) {
     };
 }
 export function createBrowserClientFromEnv(env, opts = {}) {
-    const baseURL = ensureNonEmpty("NEXT_PUBLIC_APP_BACKEND_URL", env.NEXT_PUBLIC_APP_BACKEND_URL ?? "");
-    const anonKey = ensureNonEmpty("NEXT_PUBLIC_APP_ANON_KEY", env.NEXT_PUBLIC_APP_ANON_KEY ?? "");
+    const cfg = opts.config;
+    const baseURL = ensureNonEmpty("NEXT_PUBLIC_APP_BACKEND_URL", env.NEXT_PUBLIC_APP_BACKEND_URL ?? cfg?.backend_url ?? "");
+    const anonKey = ensureNonEmpty("NEXT_PUBLIC_APP_ANON_KEY", env.NEXT_PUBLIC_APP_ANON_KEY ?? cfg?.anon_key ?? "");
     return createClient(baseURL, anonKey, opts);
 }
 export function createServerClientFromEnv(env, opts = {}) {
-    const baseURL = ensureNonEmpty("APP_BACKEND_URL", env.APP_BACKEND_URL ?? "");
+    const cfg = opts.config;
+    const baseURL = ensureNonEmpty("APP_BACKEND_URL", env.APP_BACKEND_URL ?? cfg?.backend_url ?? "");
     const serviceKey = ensureNonEmpty("APP_SERVICE_KEY", env.APP_SERVICE_KEY ?? "");
     return createClient(baseURL, serviceKey, opts);
 }
