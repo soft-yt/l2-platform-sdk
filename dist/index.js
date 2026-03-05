@@ -436,7 +436,7 @@ export function createClient(baseURL, apiKey, opts = {}) {
         },
         // ── Logs ──────────────────────────────────────────────────────────
         logs: {
-            list(params = {}) {
+            async list(params = {}) {
                 const qs = new URLSearchParams();
                 if (params.limit)
                     qs.set("limit", String(params.limit));
@@ -451,7 +451,22 @@ export function createClient(baseURL, apiKey, opts = {}) {
                 if (params.search)
                     qs.set("search", params.search);
                 const suffix = qs.toString() ? `?${qs.toString()}` : "";
-                return request(`/v1/logs${suffix}`, { method: "GET" });
+                // Backend returns { data: LogEntry[], meta: { next_cursor } } —
+                // request() only unwraps "data", so we call it for the items and
+                // lose meta. Use requestFull to preserve the full body.
+                const headers = new Headers({ apikey: key });
+                if (accessToken)
+                    headers.set("Authorization", `Bearer ${accessToken}`);
+                const response = await fetchImpl(`${base}/v1/logs${suffix}`, { method: "GET", headers });
+                const body = await parseJSON(response);
+                if (!response.ok) {
+                    const normalized = normalizeErrorBody(body);
+                    throw new AppBackendError(response.status, body, normalized.message, normalized.code);
+                }
+                return {
+                    items: Array.isArray(body?.data) ? body.data : [],
+                    meta: body?.meta,
+                };
             },
         },
     };

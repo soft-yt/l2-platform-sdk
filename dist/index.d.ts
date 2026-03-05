@@ -169,9 +169,7 @@ export declare function createClient(baseURL: string, apiKey: string, opts?: Cli
                 limit?: number;
                 offset?: number;
                 search?: string;
-            }): Promise<{
-                items: AppUser[];
-            }>;
+            }): Promise<AppUser[]>;
             create(email: string, password: string, metadata?: Record<string, unknown>): Promise<{
                 user: AppUser;
             }>;
@@ -253,9 +251,7 @@ export declare function createClient(baseURL: string, apiKey: string, opts?: Cli
         downloadSignedBytes(token: string): Promise<Uint8Array<ArrayBuffer>>;
     };
     functions: {
-        list(limit?: number): Promise<{
-            items: EdgeFunction[];
-        }>;
+        list(limit?: number): Promise<EdgeFunction[]>;
         create(params: {
             name: string;
             runtime?: string;
@@ -268,9 +264,7 @@ export declare function createClient(baseURL: string, apiKey: string, opts?: Cli
         invoke(name: string, payload?: Record<string, unknown>): Promise<FunctionInvokeResult>;
     };
     secrets: {
-        list(limit?: number): Promise<{
-            items: Secret[];
-        }>;
+        list(limit?: number): Promise<Secret[]>;
         create(name: string, value: string): Promise<Secret>;
         get(name: string): Promise<Secret>;
         delete(name: string): Promise<{
@@ -279,9 +273,7 @@ export declare function createClient(baseURL: string, apiKey: string, opts?: Cli
     };
     email: {
         templates: {
-            list(limit?: number): Promise<{
-                items: EmailTemplate[];
-            }>;
+            list(limit?: number): Promise<EmailTemplate[]>;
             create(params: {
                 name: string;
                 subject: string;
@@ -296,9 +288,7 @@ export declare function createClient(baseURL: string, apiKey: string, opts?: Cli
     };
     ai: {
         configs: {
-            list(limit?: number): Promise<{
-                items: AIConfig[];
-            }>;
+            list(limit?: number): Promise<AIConfig[]>;
             create(params: {
                 name: string;
                 provider: string;
@@ -358,9 +348,7 @@ export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: Clien
                 limit?: number;
                 offset?: number;
                 search?: string;
-            }): Promise<{
-                items: AppUser[];
-            }>;
+            }): Promise<AppUser[]>;
             create(email: string, password: string, metadata?: Record<string, unknown>): Promise<{
                 user: AppUser;
             }>;
@@ -442,9 +430,7 @@ export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: Clien
         downloadSignedBytes(token: string): Promise<Uint8Array<ArrayBuffer>>;
     };
     functions: {
-        list(limit?: number): Promise<{
-            items: EdgeFunction[];
-        }>;
+        list(limit?: number): Promise<EdgeFunction[]>;
         create(params: {
             name: string;
             runtime?: string;
@@ -457,9 +443,7 @@ export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: Clien
         invoke(name: string, payload?: Record<string, unknown>): Promise<FunctionInvokeResult>;
     };
     secrets: {
-        list(limit?: number): Promise<{
-            items: Secret[];
-        }>;
+        list(limit?: number): Promise<Secret[]>;
         create(name: string, value: string): Promise<Secret>;
         get(name: string): Promise<Secret>;
         delete(name: string): Promise<{
@@ -468,9 +452,7 @@ export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: Clien
     };
     email: {
         templates: {
-            list(limit?: number): Promise<{
-                items: EmailTemplate[];
-            }>;
+            list(limit?: number): Promise<EmailTemplate[]>;
             create(params: {
                 name: string;
                 subject: string;
@@ -485,9 +467,7 @@ export declare function createBrowserClientFromEnv(env: BrowserEnv, opts?: Clien
     };
     ai: {
         configs: {
-            list(limit?: number): Promise<{
-                items: AIConfig[];
-            }>;
+            list(limit?: number): Promise<AIConfig[]>;
             create(params: {
                 name: string;
                 provider: string;
@@ -547,9 +527,7 @@ export declare function createServerClientFromEnv(env: ServerEnv, opts?: ClientO
                 limit?: number;
                 offset?: number;
                 search?: string;
-            }): Promise<{
-                items: AppUser[];
-            }>;
+            }): Promise<AppUser[]>;
             create(email: string, password: string, metadata?: Record<string, unknown>): Promise<{
                 user: AppUser;
             }>;
@@ -631,9 +609,7 @@ export declare function createServerClientFromEnv(env: ServerEnv, opts?: ClientO
         downloadSignedBytes(token: string): Promise<Uint8Array<ArrayBuffer>>;
     };
     functions: {
-        list(limit?: number): Promise<{
-            items: EdgeFunction[];
-        }>;
+        list(limit?: number): Promise<EdgeFunction[]>;
         create(params: {
             name: string;
             runtime?: string;
@@ -646,9 +622,7 @@ export declare function createServerClientFromEnv(env: ServerEnv, opts?: ClientO
         invoke(name: string, payload?: Record<string, unknown>): Promise<FunctionInvokeResult>;
     };
     secrets: {
-        list(limit?: number): Promise<{
-            items: Secret[];
-        }>;
+        list(limit?: number): Promise<Secret[]>;
         create(name: string, value: string): Promise<Secret>;
         get(name: string): Promise<Secret>;
         delete(name: string): Promise<{
@@ -657,9 +631,7 @@ export declare function createServerClientFromEnv(env: ServerEnv, opts?: ClientO
     };
     email: {
         templates: {
-            list(limit?: number): Promise<{
-                items: EmailTemplate[];
-            }>;
+            list(limit?: number): Promise<EmailTemplate[]>;
             create(params: {
                 name: string;
                 subject: string;
@@ -674,9 +646,7 @@ export declare function createServerClientFromEnv(env: ServerEnv, opts?: ClientO
     };
     ai: {
         configs: {
-            list(limit?: number): Promise<{
-                items: AIConfig[];
-            }>;
+            list(limit?: number): Promise<AIConfig[]>;
             create(params: {
                 name: string;
                 provider: string;

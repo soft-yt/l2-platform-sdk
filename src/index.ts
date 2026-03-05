@@ -370,7 +370,7 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
           if (params.offset) qs.set("offset", String(params.offset));
           if (params.search) qs.set("search", params.search);
           const suffix = qs.toString() ? `?${qs.toString()}` : "";
-          return request<{ items: AppUser[] }>(`/v1/auth/users${suffix}`, { method: "GET" });
+          return request<AppUser[]>(`/v1/auth/users${suffix}`, { method: "GET" });
         },
         create(email: string, password: string, metadata: Record<string, unknown> = {}) {
           return request<{ user: AppUser }>("/v1/auth/users", {
@@ -515,7 +515,7 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
     // ── Edge Functions ───────────────────────────────────────────────
     functions: {
       list(limit = 100) {
-        return request<{ items: EdgeFunction[] }>(`/v1/functions?limit=${limit}`, { method: "GET" });
+        return request<EdgeFunction[]>(`/v1/functions?limit=${limit}`, { method: "GET" });
       },
       create(params: { name: string; runtime?: string; source: string }) {
         return request<EdgeFunction>("/v1/functions", {
@@ -540,7 +540,7 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
     // ── Secrets ──────────────────────────────────────────────────────
     secrets: {
       list(limit = 200) {
-        return request<{ items: Secret[] }>(`/v1/secrets?limit=${limit}`, { method: "GET" });
+        return request<Secret[]>(`/v1/secrets?limit=${limit}`, { method: "GET" });
       },
       create(name: string, value: string) {
         return request<Secret>("/v1/secrets", {
@@ -560,7 +560,7 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
     email: {
       templates: {
         list(limit = 200) {
-          return request<{ items: EmailTemplate[] }>(`/v1/email/templates?limit=${limit}`, { method: "GET" });
+          return request<EmailTemplate[]>(`/v1/email/templates?limit=${limit}`, { method: "GET" });
         },
         create(params: { name: string; subject: string; body_text: string; body_html: string }) {
           return request<EmailTemplate>("/v1/email/templates", {
@@ -581,7 +581,7 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
     ai: {
       configs: {
         list(limit = 200) {
-          return request<{ items: AIConfig[] }>(`/v1/ai/configs?limit=${limit}`, { method: "GET" });
+          return request<AIConfig[]>(`/v1/ai/configs?limit=${limit}`, { method: "GET" });
         },
         create(params: {
           name: string;
@@ -633,14 +633,14 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
 
     // ── Logs ──────────────────────────────────────────────────────────
     logs: {
-      list(params: {
+      async list(params: {
         limit?: number;
         period?: "1h" | "24h" | "7d" | "30d";
         cursor?: string;
         type?: string;
         level?: string;
         search?: string;
-      } = {}) {
+      } = {}): Promise<{ items: LogEntry[]; meta?: { next_cursor?: string } }> {
         const qs = new URLSearchParams();
         if (params.limit) qs.set("limit", String(params.limit));
         if (params.period) qs.set("period", params.period);
@@ -649,7 +649,21 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
         if (params.level) qs.set("level", params.level);
         if (params.search) qs.set("search", params.search);
         const suffix = qs.toString() ? `?${qs.toString()}` : "";
-        return request<{ items: LogEntry[]; meta?: { next_cursor?: string } }>(`/v1/logs${suffix}`, { method: "GET" });
+        // Backend returns { data: LogEntry[], meta: { next_cursor } } —
+        // request() only unwraps "data", so we call it for the items and
+        // lose meta. Use requestFull to preserve the full body.
+        const headers = new Headers({ apikey: key });
+        if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+        const response = await fetchImpl(`${base}/v1/logs${suffix}`, { method: "GET", headers });
+        const body = await parseJSON(response) as { data?: LogEntry[]; meta?: { next_cursor?: string } } | null;
+        if (!response.ok) {
+          const normalized = normalizeErrorBody(body);
+          throw new AppBackendError(response.status, body, normalized.message, normalized.code);
+        }
+        return {
+          items: Array.isArray(body?.data) ? body.data : [],
+          meta: body?.meta,
+        };
       },
     },
   };
