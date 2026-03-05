@@ -526,7 +526,7 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
       invoke(name: string, payload: Record<string, unknown> = {}) {
         return request<FunctionInvokeResult>(`/v1/functions/${encodeURIComponent(name)}/invoke`, {
           method: "POST",
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ payload })
         });
       },
     },
