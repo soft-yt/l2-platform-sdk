@@ -149,6 +149,7 @@ export function createClient(baseURL, apiKey, opts = {}) {
         setAccessToken(token) {
             accessToken = token;
         },
+        // ── Auth ──────────────────────────────────────────────────────────
         auth: {
             async register(email, password, metadata = {}) {
                 const data = await request("/v1/auth/register", {
@@ -182,8 +183,39 @@ export function createClient(baseURL, apiKey, opts = {}) {
             },
             me() {
                 return request("/v1/auth/me", { method: "GET" });
-            }
+            },
+            users: {
+                list(params = {}) {
+                    const qs = new URLSearchParams();
+                    if (params.limit)
+                        qs.set("limit", String(params.limit));
+                    if (params.offset)
+                        qs.set("offset", String(params.offset));
+                    if (params.search)
+                        qs.set("search", params.search);
+                    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+                    return request(`/v1/auth/users${suffix}`, { method: "GET" });
+                },
+                create(email, password, metadata = {}) {
+                    return request("/v1/auth/users", {
+                        method: "POST",
+                        body: JSON.stringify({ email, password, metadata })
+                    });
+                },
+            },
+            settings: {
+                get() {
+                    return request("/v1/auth/settings", { method: "GET" });
+                },
+                update(settings) {
+                    return request("/v1/auth/settings", {
+                        method: "PATCH",
+                        body: JSON.stringify(settings)
+                    });
+                },
+            },
         },
+        // ── Database ─────────────────────────────────────────────────────
         db: {
             from,
             query(query, args = []) {
@@ -219,6 +251,7 @@ export function createClient(baseURL, apiKey, opts = {}) {
                 }
             }
         },
+        // ── Storage ──────────────────────────────────────────────────────
         storage: {
             uploadBase64(params) {
                 return request("/v1/storage/upload-base64", {
@@ -252,6 +285,9 @@ export function createClient(baseURL, apiKey, opts = {}) {
                     qs.set("limit", String(params.limit));
                 const suffix = qs.toString() ? `?${qs.toString()}` : "";
                 return request(`/v1/storage/list${suffix}`, { method: "GET" });
+            },
+            buckets() {
+                return request("/v1/storage/buckets", { method: "GET" });
             },
             downloadText(params) {
                 const qs = new URLSearchParams();
@@ -299,7 +335,125 @@ export function createClient(baseURL, apiKey, opts = {}) {
                 }
                 return new Uint8Array(await response.arrayBuffer());
             }
-        }
+        },
+        // ── Edge Functions ───────────────────────────────────────────────
+        functions: {
+            list(limit = 100) {
+                return request(`/v1/functions?limit=${limit}`, { method: "GET" });
+            },
+            create(params) {
+                return request("/v1/functions", {
+                    method: "POST",
+                    body: JSON.stringify(params)
+                });
+            },
+            get(name) {
+                return request(`/v1/functions/${encodeURIComponent(name)}`, { method: "GET" });
+            },
+            delete(name) {
+                return request(`/v1/functions/${encodeURIComponent(name)}`, { method: "DELETE" });
+            },
+            invoke(name, payload = {}) {
+                return request(`/v1/functions/${encodeURIComponent(name)}/invoke`, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+            },
+        },
+        // ── Secrets ──────────────────────────────────────────────────────
+        secrets: {
+            list(limit = 200) {
+                return request(`/v1/secrets?limit=${limit}`, { method: "GET" });
+            },
+            create(name, value) {
+                return request("/v1/secrets", {
+                    method: "POST",
+                    body: JSON.stringify({ name, value })
+                });
+            },
+            get(name) {
+                return request(`/v1/secrets/${encodeURIComponent(name)}`, { method: "GET" });
+            },
+            delete(name) {
+                return request(`/v1/secrets/${encodeURIComponent(name)}`, { method: "DELETE" });
+            },
+        },
+        // ── Email Templates ──────────────────────────────────────────────
+        email: {
+            templates: {
+                list(limit = 200) {
+                    return request(`/v1/email/templates?limit=${limit}`, { method: "GET" });
+                },
+                create(params) {
+                    return request("/v1/email/templates", {
+                        method: "POST",
+                        body: JSON.stringify(params)
+                    });
+                },
+                get(name) {
+                    return request(`/v1/email/templates/${encodeURIComponent(name)}`, { method: "GET" });
+                },
+                delete(name) {
+                    return request(`/v1/email/templates/${encodeURIComponent(name)}`, { method: "DELETE" });
+                },
+            },
+        },
+        // ── AI ────────────────────────────────────────────────────────────
+        ai: {
+            configs: {
+                list(limit = 200) {
+                    return request(`/v1/ai/configs?limit=${limit}`, { method: "GET" });
+                },
+                create(params) {
+                    return request("/v1/ai/configs", {
+                        method: "POST",
+                        body: JSON.stringify(params)
+                    });
+                },
+                get(name) {
+                    return request(`/v1/ai/configs/${encodeURIComponent(name)}`, { method: "GET" });
+                },
+                delete(name) {
+                    return request(`/v1/ai/configs/${encodeURIComponent(name)}`, { method: "DELETE" });
+                },
+            },
+            chat(params) {
+                return request("/v1/ai/chat", {
+                    method: "POST",
+                    body: JSON.stringify({ ...params, stream: false })
+                });
+            },
+            embeddings(params) {
+                return request("/v1/ai/embeddings", {
+                    method: "POST",
+                    body: JSON.stringify(params)
+                });
+            },
+            usage(period) {
+                const suffix = period ? `?period=${period}` : "";
+                return request(`/v1/ai/usage${suffix}`, { method: "GET" });
+            },
+        },
+        // ── Logs ──────────────────────────────────────────────────────────
+        logs: {
+            list(params = {}) {
+                const qs = new URLSearchParams();
+                if (params.limit)
+                    qs.set("limit", String(params.limit));
+                if (params.period)
+                    qs.set("period", params.period);
+                if (params.cursor)
+                    qs.set("cursor", params.cursor);
+                if (params.type)
+                    qs.set("type", params.type);
+                if (params.level)
+                    qs.set("level", params.level);
+                if (params.search)
+                    qs.set("search", params.search);
+                const suffix = qs.toString() ? `?${qs.toString()}` : "";
+                return request(`/v1/logs${suffix}`, { method: "GET" });
+            },
+        },
     };
 }
 export function createBrowserClientFromEnv(env, opts = {}) {

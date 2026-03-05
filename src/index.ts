@@ -11,6 +11,17 @@ export type AuthPayload = {
   refresh_token?: string;
 };
 
+export type AuthSettings = {
+  email_enabled: boolean;
+  phone_enabled: boolean;
+  google_enabled: boolean;
+  apple_enabled: boolean;
+  microsoft_enabled: boolean;
+  disable_signup: boolean;
+  allow_anonymous: boolean;
+  updated_at: string;
+};
+
 export type DBQueryResult = {
   columns: string[];
   rows: unknown[][];
@@ -33,6 +44,101 @@ export type StorageObject = {
   etag: string;
   created_at: string;
   updated_at: string;
+};
+
+export type EdgeFunction = {
+  id: string;
+  name: string;
+  runtime: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FunctionInvokeResult = {
+  result: unknown;
+  runtime_ms: number;
+  function: string;
+  invoked_at: string;
+  runtime_env: string;
+};
+
+export type Secret = {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EmailTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  body_text: string;
+  body_html: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AIConfig = {
+  id: string;
+  name: string;
+  provider: string;
+  model: string;
+  base_url: string;
+  secret_name: string;
+  default_config: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AIChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export type AIChatResponse = {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: Array<{
+    index: number;
+    message: { role: string; content: string };
+    finish_reason: string;
+  }>;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+};
+
+export type AIEmbeddingsResponse = {
+  object: string;
+  data: Array<{
+    object: string;
+    index: number;
+    embedding: number[];
+  }>;
+  model: string;
+  usage: { prompt_tokens: number; total_tokens: number };
+};
+
+export type AIUsage = {
+  total_requests: number;
+  models_count: number;
+  top_model: string;
+};
+
+export type LogEntry = {
+  id: string;
+  app_id: string;
+  level: string;
+  source: string;
+  message: string;
+  meta: Record<string, unknown>;
+  created_at: string;
 };
 
 export class AppBackendError extends Error {
@@ -215,6 +321,8 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
     setAccessToken(token: string) {
       accessToken = token;
     },
+
+    // ── Auth ──────────────────────────────────────────────────────────
     auth: {
       async register(email: string, password: string, metadata: Record<string, unknown> = {}) {
         const data = await request<AuthPayload>("/v1/auth/register", {
@@ -248,8 +356,37 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
       },
       me() {
         return request<{ user: AppUser }>("/v1/auth/me", { method: "GET" });
-      }
+      },
+      users: {
+        list(params: { limit?: number; offset?: number; search?: string } = {}) {
+          const qs = new URLSearchParams();
+          if (params.limit) qs.set("limit", String(params.limit));
+          if (params.offset) qs.set("offset", String(params.offset));
+          if (params.search) qs.set("search", params.search);
+          const suffix = qs.toString() ? `?${qs.toString()}` : "";
+          return request<{ items: AppUser[] }>(`/v1/auth/users${suffix}`, { method: "GET" });
+        },
+        create(email: string, password: string, metadata: Record<string, unknown> = {}) {
+          return request<{ user: AppUser }>("/v1/auth/users", {
+            method: "POST",
+            body: JSON.stringify({ email, password, metadata })
+          });
+        },
+      },
+      settings: {
+        get() {
+          return request<AuthSettings>("/v1/auth/settings", { method: "GET" });
+        },
+        update(settings: Partial<Omit<AuthSettings, "updated_at">>) {
+          return request<AuthSettings>("/v1/auth/settings", {
+            method: "PATCH",
+            body: JSON.stringify(settings)
+          });
+        },
+      },
     },
+
+    // ── Database ─────────────────────────────────────────────────────
     db: {
       from,
       query(query: string, args: unknown[] = []) {
@@ -285,6 +422,8 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
         }
       }
     },
+
+    // ── Storage ──────────────────────────────────────────────────────
     storage: {
       uploadBase64(params: { bucket?: string; key: string; contentType?: string; dataBase64: string }) {
         return request<StorageObject>("/v1/storage/upload-base64", {
@@ -315,6 +454,9 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
         if (params.limit) qs.set("limit", String(params.limit));
         const suffix = qs.toString() ? `?${qs.toString()}` : "";
         return request<{ items: StorageObject[] }>(`/v1/storage/list${suffix}`, { method: "GET" });
+      },
+      buckets() {
+        return request<{ items: string[] }>("/v1/storage/buckets", { method: "GET" });
       },
       downloadText(params: { bucket?: string; key: string }) {
         const qs = new URLSearchParams();
@@ -362,7 +504,148 @@ export function createClient(baseURL: string, apiKey: string, opts: ClientOption
         }
         return new Uint8Array(await response.arrayBuffer());
       }
-    }
+    },
+
+    // ── Edge Functions ───────────────────────────────────────────────
+    functions: {
+      list(limit = 100) {
+        return request<{ items: EdgeFunction[] }>(`/v1/functions?limit=${limit}`, { method: "GET" });
+      },
+      create(params: { name: string; runtime?: string; source: string }) {
+        return request<EdgeFunction>("/v1/functions", {
+          method: "POST",
+          body: JSON.stringify(params)
+        });
+      },
+      get(name: string) {
+        return request<EdgeFunction>(`/v1/functions/${encodeURIComponent(name)}`, { method: "GET" });
+      },
+      delete(name: string) {
+        return request<{ deleted: boolean }>(`/v1/functions/${encodeURIComponent(name)}`, { method: "DELETE" });
+      },
+      invoke(name: string, payload: Record<string, unknown> = {}) {
+        return request<FunctionInvokeResult>(`/v1/functions/${encodeURIComponent(name)}/invoke`, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+      },
+    },
+
+    // ── Secrets ──────────────────────────────────────────────────────
+    secrets: {
+      list(limit = 200) {
+        return request<{ items: Secret[] }>(`/v1/secrets?limit=${limit}`, { method: "GET" });
+      },
+      create(name: string, value: string) {
+        return request<Secret>("/v1/secrets", {
+          method: "POST",
+          body: JSON.stringify({ name, value })
+        });
+      },
+      get(name: string) {
+        return request<Secret>(`/v1/secrets/${encodeURIComponent(name)}`, { method: "GET" });
+      },
+      delete(name: string) {
+        return request<{ deleted: boolean }>(`/v1/secrets/${encodeURIComponent(name)}`, { method: "DELETE" });
+      },
+    },
+
+    // ── Email Templates ──────────────────────────────────────────────
+    email: {
+      templates: {
+        list(limit = 200) {
+          return request<{ items: EmailTemplate[] }>(`/v1/email/templates?limit=${limit}`, { method: "GET" });
+        },
+        create(params: { name: string; subject: string; body_text: string; body_html: string }) {
+          return request<EmailTemplate>("/v1/email/templates", {
+            method: "POST",
+            body: JSON.stringify(params)
+          });
+        },
+        get(name: string) {
+          return request<EmailTemplate>(`/v1/email/templates/${encodeURIComponent(name)}`, { method: "GET" });
+        },
+        delete(name: string) {
+          return request<{ deleted: boolean }>(`/v1/email/templates/${encodeURIComponent(name)}`, { method: "DELETE" });
+        },
+      },
+    },
+
+    // ── AI ────────────────────────────────────────────────────────────
+    ai: {
+      configs: {
+        list(limit = 200) {
+          return request<{ items: AIConfig[] }>(`/v1/ai/configs?limit=${limit}`, { method: "GET" });
+        },
+        create(params: {
+          name: string;
+          provider: string;
+          model: string;
+          base_url?: string;
+          secret_name: string;
+          default_config?: boolean;
+        }) {
+          return request<AIConfig>("/v1/ai/configs", {
+            method: "POST",
+            body: JSON.stringify(params)
+          });
+        },
+        get(name: string) {
+          return request<AIConfig>(`/v1/ai/configs/${encodeURIComponent(name)}`, { method: "GET" });
+        },
+        delete(name: string) {
+          return request<{ deleted: boolean }>(`/v1/ai/configs/${encodeURIComponent(name)}`, { method: "DELETE" });
+        },
+      },
+      chat(params: {
+        config?: string;
+        model?: string;
+        messages: AIChatMessage[];
+        temperature?: number;
+        max_tokens?: number;
+      }) {
+        return request<AIChatResponse>("/v1/ai/chat", {
+          method: "POST",
+          body: JSON.stringify({ ...params, stream: false })
+        });
+      },
+      embeddings(params: {
+        config?: string;
+        model?: string;
+        input: string | string[];
+      }) {
+        return request<AIEmbeddingsResponse>("/v1/ai/embeddings", {
+          method: "POST",
+          body: JSON.stringify(params)
+        });
+      },
+      usage(period?: "1h" | "24h" | "7d" | "30d") {
+        const suffix = period ? `?period=${period}` : "";
+        return request<AIUsage>(`/v1/ai/usage${suffix}`, { method: "GET" });
+      },
+    },
+
+    // ── Logs ──────────────────────────────────────────────────────────
+    logs: {
+      list(params: {
+        limit?: number;
+        period?: "1h" | "24h" | "7d" | "30d";
+        cursor?: string;
+        type?: string;
+        level?: string;
+        search?: string;
+      } = {}) {
+        const qs = new URLSearchParams();
+        if (params.limit) qs.set("limit", String(params.limit));
+        if (params.period) qs.set("period", params.period);
+        if (params.cursor) qs.set("cursor", params.cursor);
+        if (params.type) qs.set("type", params.type);
+        if (params.level) qs.set("level", params.level);
+        if (params.search) qs.set("search", params.search);
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        return request<{ items: LogEntry[]; meta?: { next_cursor?: string } }>(`/v1/logs${suffix}`, { method: "GET" });
+      },
+    },
   };
 }
 
